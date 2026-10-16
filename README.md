@@ -98,3 +98,18 @@ For comparison, a copy of the expected results can be found in `ae\expected_resu
 ## User Guide
 
 A guide on "How to Run a LLMCompass Simulation" is shown [here](./docs/run.md).
+
+## Local GQA extension
+
+Both Transformer block classes accept optional `n_kv_heads` (defaults to
+`n_heads`, preserving MHA). K/V projection widths and decode KV storage use
+the KV-head count. QK and AV use one batch per KV head, with the sharing query
+heads folded into the matrix row dimension; softmax still has one row per
+query head/token. Projection time is Q + K + V rather than three times Q.
+Existing Matmul, BatchedMatmul and Softmax estimators are unchanged.
+
+This extension does not add FlashAttention, causal work pruning, BF16 support,
+SwiGLU or RMSNorm. Both block classes also accept optional `ffn_hidden_size`
+(default `4 * d_model`). The adapter passes the model FFN width (14336 for
+Llama 3.1 8B); the original two FFN projections, GeLU and normalization remain.
+Tensor parallelism requires KV heads to divide evenly across devices.
